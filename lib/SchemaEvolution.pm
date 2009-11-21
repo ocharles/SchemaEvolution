@@ -1,12 +1,15 @@
 package SchemaEvolution;
 use Moose;
 use MooseX::Has::Sugar;
-use MooseX::Types::Moose qw( HashRef Str );
+use MooseX::Types::Moose qw( ArrayRef HashRef Str );
 
 use Config::Tiny;
 use DBI;
+use File::Find::Rule;
+use File::Slurp;
+use Path::Class qw( file );
 use SchemaEvolution::Types qw( DBH );
-use Try::Tiny;
+use TryCatch;
 
 with 'MooseX::Getopt';
 
@@ -23,10 +26,78 @@ sub run {
     my $self = shift;
     my $dbh = $self->_dbh;
     my ($column, $table) = ($self->_version_column, $self->_version_table);
-    my ($version) = $dbh->selectrow_arrayref("SELECT $column FROM $table");
-    $version
+    my ($version) = $dbh->selectrow_array("SELECT $column FROM $table");
+    defined $version
         or die "Could not select version column '$column' from meta table '$table'";
+    my @evolutions = $self->evolutions_after_version($version);
+    if (@evolutions == 0) {
+        print "Didn't find any schema evolutions, nothing to do\n";
+        return;
+    }
+
+    my $new_version = $version;
+    for my $evolution (@evolutions) {
+        try {
+            $new_version = $self->apply_evolution($evolution);
+        } catch {
+            print "encountered an error, aborting.\n";
+            last;
+        }
+    }
+
+    print "\nSchema evolution completed (or terminated)\n";
+    print "New version is: $new_version\n";
+    $self->_set_version($new_version);
 }
+
+sub apply_evolution {
+    my ($self, $filename) = @_;
+    print "Applying $filename... ";
+    my $dbh = $self->_dbh;
+    my $sql = read_file($filename) or die "Could read contents of $filename!";
+    my $res = $dbh->do($sql);
+    if (!defined $res) {
+        die "Could not apply $filename";
+    }
+    print "done!\n";
+    return _version_from_filename($filename);
+}
+
+sub _set_version {
+    my ($self, $version) = @_;
+    my ($column, $table) = ($self->_version_column, $self->_version_table);
+    $self->_dbh->do("UPDATE $table SET $column = ?", {}, $version);
+}
+
+sub _version_from_filename
+{
+    my $filename = shift;
+    my ($v) = file($filename)->basename =~ /^(\d+)/;
+    return int($v);
+}
+
+sub evolutions_after_version
+{
+    my ($self, $version) = @_;
+    return sort {
+        _version_from_filename($a) <=> _version_from_filename($b)
+    } grep {
+        _version_from_filename($_) > $version;
+    } @{ $self->_evolutions };
+}
+
+has '_evolutions' => (
+    isa => ArrayRef[Str],
+    lazy,
+    ro,
+    default => sub {
+        my $self = shift;
+        return [
+            File::Find::Rule->file()
+                  ->name('*.sql')->in($self->_evolutions_dir)
+              ];
+    }
+);
 
 has '_config' => (
     ro,
@@ -61,6 +132,13 @@ has '_version_column' => (
     isa => Str,
     lazy => 1,
     default => sub { shift->_config->{_}->{version_column} || 'version' }
+);
+
+has '_evolutions_dir' => (
+    ro,
+    isa => Str,
+    lazy => 1,
+    default => sub { shift->_config->{_}->{evolutions} || 'evolutions' }
 );
 
 has '_dbh' => (
