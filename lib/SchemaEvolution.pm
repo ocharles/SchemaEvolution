@@ -178,4 +178,13 @@ database, and a set of scripts to move from one version to another.
 Runs the schema evolution process, with settings from the configuration
 options. This is the entry point of the 'evolve' script.
 
+=head2 apply_evolution $filename
+
+Applies a single evolution pointed to by $filename (raw SQL), and returns
+the new version of the schema.
+
+=head2 evolutions_after_version $version
+
+Returns all the evolution filenames that are after $version.
+
 =cut
