@@ -90,7 +90,14 @@ SchemaEvolution - manage the evolution of a database with simple files
 
 SchemaEvolution is a very basic tool to cope with evolving a database
 schema over time. Rather than hook in with any specific framework,
-this is nothing more than a single table to track the version of 
+this is nothing more than a single table to track the version of
 database, and a set of scripts to move from one version to another.
+
+=head1 METHODS
+
+=head2 run
+
+Runs the schema evolution process, with settings from the configuration
+options. This is the entry point of the 'evolve' script.
 
 =cut

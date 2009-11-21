@@ -8,4 +8,10 @@ use lib "$Bin/../lib";
 use SchemaEvolution;
 
 my $app = SchemaEvolution->new_with_options;
-$app->run
+$app->run;
+
+=head1 NAME
+
+evolve - evolve your schema to the latest version
+
+=cut
