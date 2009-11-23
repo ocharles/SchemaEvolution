@@ -1,4 +1,6 @@
 #!/usr/bin/perl
+
+# ABSTRACT: evolve - evolve your schema to the latest version
 use strict;
 use warnings;
 
@@ -9,10 +11,6 @@ use SchemaEvolution;
 
 my $app = SchemaEvolution->new_with_options;
 $app->run;
-
-=head1 NAME
-
-evolve - evolve your schema to the latest version
 
 =head1 DESCRIPTION
 
