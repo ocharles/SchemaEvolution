@@ -1,7 +1,7 @@
 package SchemaEvolution;
 use Moose;
 use MooseX::Has::Sugar;
-use MooseX::Types::Moose qw( ArrayRef HashRef Str );
+use MooseX::Types::Moose qw( ArrayRef Bool HashRef Str );
 
 use Config::Tiny;
 use DBI;
@@ -22,8 +22,19 @@ has 'config_file' => (
     required
 );
 
+has 'initialize' => (
+    traits => [qw( Getopt )],
+    isa => Bool,
+    ro,
+    default => 0,
+);
+
 sub run {
     my $self = shift;
+
+    $self->initialize_table if ($self->initialize);
+
+
     my $dbh = $self->_dbh;
     my ($column, $table) = ($self->_version_column, $self->_version_table);
     my ($version) = $dbh->selectrow_array("SELECT $column FROM $table");
@@ -48,6 +59,14 @@ sub run {
     print "\nSchema evolution completed (or terminated)\n";
     print "New version is: $new_version\n";
     $self->_set_version($new_version);
+}
+
+sub initialize_table {
+    my $self = shift;
+    my $dbh = $self->_dbh;
+    my ($column, $table) = ($self->_version_column, $self->_version_table);
+    $dbh->do("CREATE TABLE $table ( $column INTEGER NOT NULL DEFAULT 0 )");
+    $dbh->do("INSERT INTO $table ( $column) VALUES ( 0 )");
 }
 
 sub apply_evolution {
