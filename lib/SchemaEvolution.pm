@@ -1,4 +1,6 @@
 package SchemaEvolution;
+# ABSTRACT: SchemaEvolution - manage the evolution of a database with simple files
+
 use Moose;
 use MooseX::Has::Sugar;
 use MooseX::Types::Moose qw( ArrayRef Bool HashRef Str );
@@ -179,10 +181,6 @@ sub _build__dbh {
 
 1;
 
-=head1 NAME
-
-SchemaEvolution - manage the evolution of a database with simple files
-
 =head1 DESCRIPTION
 
 SchemaEvolution is a very basic tool to cope with evolving a database
@@ -207,3 +205,4 @@ the new version of the schema.
 Returns all the evolution filenames that are after $version.
 
 =cut
+
