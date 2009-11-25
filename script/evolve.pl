@@ -43,11 +43,17 @@ the PostgresSQL driver to connect to the messaging database, with the
 credentials "messaging" and "hello"
 
 Next, we need to add the version column into our database. By default this is
-the version column in the schema_version table.
+the version column in the schema_version table. We can either enter the SQL by
+hand...
 
     CREATE TABLE schema_version (
          version INTEGER NOT NULL DEFAULT 0
     );
+    INSERT INTO schema_version VALUES (0);
+
+Or we can just let evolve.pl do it for us:
+
+    evolve.pl --initialize
 
 Great! Now we can start writing some schema evolutions. The first thing we need
 in our system is support for users. Let's go with something basic. In our
